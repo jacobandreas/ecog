@@ -15,6 +15,10 @@ import java.util.List;
  */
 public class Dataset {
 
+    public static final int N_ELECTRODES = 256;
+    public static final int AUDIO_SAMPLE_RATE_HZ = 16000;
+    public static final int ECOG_SAMPLE_RATE_HZ = 100;
+
     public final List<LabeledDatum> train;
     public final List<LabeledDatum> dev;
     public final List<LabeledDatum> test;
@@ -29,7 +33,6 @@ public class Dataset {
 
         List<LabeledDatum> data = new ArrayList<LabeledDatum>();
 
-        System.out.println(makeEcogPath());
         for (File csvFile : new File(makeEcogPath()).listFiles()) {
             String timitName = csvFile.getName().substring(0, csvFile.getName().length() - 4);
             try {
@@ -42,6 +45,8 @@ public class Dataset {
                 e.printStackTrace();
             }
         }
+
+        data = data.subList(0, Math.min(data.size(), EcogExperiment.nRecordings));
 
         Pair<Integer, Integer> split = makeSplit(data.size());
 
@@ -61,17 +66,34 @@ public class Dataset {
         return EcogExperiment.dataRoot + "/sounds/" + timitName + "." + extension;
     }
 
-    private static double[][] loadResponse(File csvFile) {
-        return null;
+    private static double[][] loadResponse(File csvFile) throws IOException {
+        double[][] response = null;
+        BufferedReader reader = new BufferedReader(new FileReader(csvFile));
+        String l;
+        int electrode = 0;
+        while ((l = reader.readLine()) != null) {
+            String[] parts = l.split(",");
+            if (response == null) {
+                response = new double[parts.length][N_ELECTRODES];
+            }
+            for (int frame = 0; frame < parts.length; frame++) {
+                response[frame][electrode] = Double.parseDouble(parts[frame]);
+            }
+            electrode++;
+        }
+        assert electrode == N_ELECTRODES;
+        return response;
     }
 
     private static Token[] loadTimit(File timitFile) throws IOException {
-        BufferedReader reader = new BufferedReader(new FileReader(timitFile));
         ArrayList<Token> tokens = new ArrayList<Token>();
+        BufferedReader reader = new BufferedReader(new FileReader(timitFile));
         String l;
         while ((l = reader.readLine()) != null) {
             String[] parts = l.split(" ");
-            tokens.add(new Token(parts[2], Integer.parseInt(parts[0]), Integer.parseInt(parts[1])));
+            int start = (int)(Double.parseDouble(parts[0]) / AUDIO_SAMPLE_RATE_HZ * ECOG_SAMPLE_RATE_HZ);
+            int end = (int)(Double.parseDouble(parts[1]) / AUDIO_SAMPLE_RATE_HZ * ECOG_SAMPLE_RATE_HZ);
+            tokens.add(new Token(parts[2], start, end));
         }
         return tokens.toArray(new Token[tokens.size()]);
     }

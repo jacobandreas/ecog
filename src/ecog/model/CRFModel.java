@@ -4,6 +4,9 @@ import ecog.data.Datum;
 import ecog.data.LabeledDatum;
 import ecog.data.Token;
 import ecog.eval.EvalStats;
+import ecog.features.EdgeFeaturizer;
+import ecog.features.NodeFeaturizer;
+import ecog.main.EcogExperiment;
 import indexer.HashMapIndexer;
 import indexer.Indexer;
 import opt.DifferentiableFunction;
@@ -14,6 +17,7 @@ import sequence.ForwardBackward;
 import tuple.Pair;
 import arrays.a;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -38,14 +42,14 @@ public class CRFModel implements Model {
         return null;
     }
 
-    public static CRFModel train(List<LabeledDatum> data) {
-        //data = data.subList(0, 20);
+    public static CRFModel train(List<LabeledDatum> data, NodeFeaturizer nodeFeaturizer, EdgeFeaturizer edgeFeaturizer) {
         final Indexer<String> labelIndex = makeLabelIndex(data);
-        final int[][][][] nodeFeatures = makeNodeFeatures(data, labelIndex.size());
-        final int[][][][] edgeFeatures = makeEdgeFeatures(data, labelIndex.size());
+        final Indexer<String> featureIndex = makeFeatureIndex(data, labelIndex, nodeFeaturizer, edgeFeaturizer);
+        final int[][][][] nodeFeatures = makeNodeFeatures(data, labelIndex.size(), nodeFeaturizer, featureIndex);
+        final int[][][][] edgeFeatures = makeEdgeFeatures(data, labelIndex.size(), edgeFeaturizer, featureIndex);
 
         final DifferentiableFunction objective = makeObjective(data, labelIndex, nodeFeatures, edgeFeatures);
-        double[] initWeights = a.randDouble(3 * (int) Math.pow(labelIndex.size(), 2), new Random());
+        double[] initWeights = a.zerosDouble(featureIndex.size());
         //EmpiricalGradientTester.test(objective, initWeights, 0.001, 1e-4, 1e-8);
         Minimizer minimizer = new LBFGSMinimizer(1e-5, 100);
         double[] weights = minimizer.minimize(objective, initWeights, true, new Minimizer.Callback() {
@@ -69,8 +73,12 @@ public class CRFModel implements Model {
                         ForwardBackward.computeMarginalsLogSpace(observedLattice, projector, false, 4);
                 Pair<ForwardBackward.NodeMarginals, ForwardBackward.StationaryEdgeMarginals> predictedMarginals =
                         ForwardBackward.computeMarginalsLogSpace(predictedLattice, projector, false, 4);
+
                 double likelihood = -1 * (observedMarginals.getFirst().logMarginalProb() - predictedMarginals.getFirst().logMarginalProb());
                 double[] gradient = a.comb(expectedFeatures(theta, observedMarginals, nodeFeatures, edgeFeatures), -1d,  expectedFeatures(theta, predictedMarginals, nodeFeatures, edgeFeatures), 1d);
+
+                likelihood += 0.5 * EcogExperiment.l2Regularizer * a.innerProd(theta, theta);
+                a.combi(gradient, 1d, theta, EcogExperiment.l2Regularizer);
 
                 return new Pair<Double, double[]>(likelihood, gradient);
             }
@@ -84,6 +92,22 @@ public class CRFModel implements Model {
         for (LabeledDatum datum : data) {
             for (Token tok : datum.labels) {
                 indexer.getIndex(tok.label);
+            }
+        }
+        indexer.lock();
+        return indexer;
+    }
+
+    private static Indexer<String> makeFeatureIndex(List<LabeledDatum> data, Indexer<String> labelIndex, NodeFeaturizer nf, EdgeFeaturizer ef) {
+        Indexer<String> indexer = new HashMapIndexer<String>();
+        for (LabeledDatum datum : data) {
+            for (int t = 0; t < datum.labels.length; t++) {
+                int thisState = labelIndex.getIndex(datum.labels[t].label);
+                indexer.index(nf.apply(datum, thisState, datum.labels[t].beginFrame));
+                if (t < datum.labels.length - 1) {
+                    int nextState = labelIndex.getIndex(datum.labels[t+1].label);
+                    indexer.index(ef.apply(datum, thisState, nextState));
+                }
             }
         }
         indexer.lock();
@@ -217,7 +241,7 @@ public class CRFModel implements Model {
         return expectedWeights;
     }
 
-    private static int[][][][] makeNodeFeatures(List<LabeledDatum> data, int numStates) {
+    private static int[][][][] makeNodeFeatures(List<LabeledDatum> data, int numStates, NodeFeaturizer nf, Indexer<String> featIndex) {
         int[][][][] features = new int[data.size()][][][];
         for (int d = 0; d < data.size(); d++) {
             LabeledDatum datum = data.get(d);
@@ -225,24 +249,38 @@ public class CRFModel implements Model {
             for (int t = 0; t < datum.labels.length; t++) {
                 features[d][t] = new int[numStates][];
                 for (int s = 0; s < numStates; s++) {
-                    features[d][t][s] = new int[] { s };
+                    features[d][t][s] = getIndices(nf.apply(datum, s, datum.labels[t].beginFrame), featIndex);
                 }
             }
         }
         return features;
     }
 
-    private static int[][][][] makeEdgeFeatures(List<LabeledDatum> data, int numStates) {
+    private static int[][][][] makeEdgeFeatures(List<LabeledDatum> data, int numStates, EdgeFeaturizer ef, Indexer<String> featIndex) {
         int[][][][] features = new int[data.size()][][][];
         for (int d = 0; d < data.size(); d++) {
             features[d] = new int[numStates][numStates][];
             for (int s1 = 0; s1 < numStates; s1++) {
                 for (int s2 = 0; s2 < numStates; s2++) {
-                    features[d][s1][s2] = new int[] { numStates + s1 * numStates + s2 };
+                    features[d][s1][s2] = getIndices(ef.apply(data.get(d), s1, s2), featIndex);
                 }
             }
         }
         return features;
+    }
+
+    private static int[] getIndices(String[] feats, Indexer<String> index) {
+        List<Integer> r = new ArrayList<Integer>(feats.length);
+        for (String feat : feats) {
+            if (index.contains(feat)) {
+                r.add(index.getIndex(feat));
+            }
+        }
+        int[] rr = new int[r.size()];
+        for (int i = 0; i < r.size(); i++) {
+            rr[i] = r.get(i);
+        }
+        return rr;
     }
 
     private static double dot(int[] features, double[] theta) {
