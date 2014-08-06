@@ -12,10 +12,10 @@ import fig.Option;
  */
 public class EcogExperiment implements Runnable {
 
-    @Option(gloss = "")
+    @Option(gloss = "path to ECOG data")
     public static String dataRoot;
 
-    @Option(gloss = "")
+    @Option(gloss = "path to patient (e.g. 'left_grid/EC36')")
     public static String patient = "left_grid/EC36";
 
     public void run() {
