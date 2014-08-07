@@ -30,6 +30,7 @@ public class EcogExperiment implements Runnable {
         Dataset data = Dataset.load();
         Model model = CRFModel.train(data.train, new SimpleNodeFeaturizer(), new SimpleEdgeFeaturizer());
         EvalStats eval = model.evaluate(data.dev);
+        System.out.println(eval);
     }
 
     public static void main(String[] args) {

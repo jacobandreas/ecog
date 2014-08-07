@@ -24,22 +24,88 @@ import java.util.Random;
 /**
  * @author jda
  */
-public class CRFModel implements Model {
+public class CRFModel extends Model {
 
-    private final double[] weights;
+    private final double[] theta;
+    private final Indexer<String> labelIndex;
+    private final NodeFeaturizer nodeFeaturizer;
+    private final EdgeFeaturizer edgeFeaturizer;
+    private final Indexer<String> featureIndex;
 
-    public CRFModel(double[] weights) {
-        this.weights = weights;
+    public CRFModel(double[] theta,
+                    Indexer<String> labelIndex,
+                    NodeFeaturizer nodeFeaturizer,
+                    EdgeFeaturizer edgeFeaturizer,
+                    Indexer<String> featureIndex) {
+        this.theta = theta;
+        this.labelIndex = labelIndex;
+        this.nodeFeaturizer = nodeFeaturizer;
+        this.edgeFeaturizer = edgeFeaturizer;
+        this.featureIndex = featureIndex;
     }
 
     @Override
-    public LabeledDatum predict(Datum datum) {
-        return null;
-    }
+    public LabeledDatum predict(final Datum datum) {
+        ForwardBackward.StationaryLattice lattice = new ForwardBackward.StationaryLattice() {
+            @Override
+            public int numSequences() {
+                return 1;
+            }
 
-    @Override
-    public EvalStats evaluate(List<LabeledDatum> data) {
-        return null;
+            @Override
+            public int sequenceLength(int d) {
+                return datum.tokenBoundaries.length;
+            }
+
+            @Override
+            public int numStates(int d) {
+                return labelIndex.size();
+            }
+
+            @Override
+            public double nodeLogPotential(int d, int t, int s) {
+                return dot(getIndices(nodeFeaturizer.apply(datum, s, t), featureIndex), theta);
+            }
+
+            @Override
+            public double[] allowedEdgesLogPotentials(int d, int s, boolean backward) {
+                double[] r = new double[numStates(d)];
+                for (int i = 0; i < r.length; i++) {
+                    int state1, state2;
+                    state1 = backward ? i : s;
+                    state2 = backward ? s : i;
+                    r[i] = dot(getIndices(edgeFeaturizer.apply(datum, state1, state2), featureIndex), theta);
+                }
+                return r;
+            }
+
+            @Override
+            public double nodePotential(int d, int t, int s) {
+                return Math.exp(nodeLogPotential(d, t, s));
+            }
+
+            @Override
+            public double[] allowedEdgesPotentials(int d, int s, boolean backward) {
+                return a.exp(allowedEdgesLogPotentials(d, s, backward));
+            }
+
+            @Override
+            public int[] allowedEdges(int d, int s, boolean backward) {
+                return a.enumerate(0, numStates(d));
+            }
+        };
+
+        Pair<ForwardBackward.NodeMarginals, ForwardBackward.StationaryEdgeMarginals> marginals =
+                ForwardBackward.computeMarginalsLogSpace(lattice, new StateProjector(labelIndex.size()), false, 4);
+
+        Token[] predicted = new Token[datum.tokenBoundaries.length];
+        for (int t = 0; t < predicted.length; t++) {
+            int predLabel = a.argmax(marginals.getFirst().nodeCondProbs(0, t));
+            Token boundaryToken = datum.tokenBoundaries[t];
+            Token predToken = new Token(labelIndex.getObject(predLabel), boundaryToken.beginFrame, boundaryToken.endFrame);
+            predicted[t] = predToken;
+        }
+        return new LabeledDatum(datum, predicted, null);
     }
 
     public static CRFModel train(List<LabeledDatum> data, NodeFeaturizer nodeFeaturizer, EdgeFeaturizer edgeFeaturizer) {
@@ -57,7 +123,7 @@ public class CRFModel implements Model {
             public void callback(double[] guess, int iter, double val, double[] grad) {
             }
         });
-        return new CRFModel(weights);
+        return new CRFModel(weights, labelIndex, nodeFeaturizer, edgeFeaturizer, featureIndex);
     }
 
     private static DifferentiableFunction makeObjective(final List<LabeledDatum> data, final Indexer<String> labelIndex, final int[][][][] nodeFeatures, final int[][][][] edgeFeatures) {

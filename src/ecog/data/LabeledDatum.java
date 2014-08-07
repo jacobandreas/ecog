@@ -11,7 +11,7 @@ public class LabeledDatum extends Datum {
     public final Token[] labels;
 
     public LabeledDatum(Datum wrapped, Token[] phoneLabels, Token[] wordLabels) {
-        super(wrapped.response);
+        super(wrapped.response, phoneLabels);
         this.wrapped = wrapped;
         this.phoneLabels = phoneLabels;
         this.wordLabels = wordLabels;

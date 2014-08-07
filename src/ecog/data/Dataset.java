@@ -39,7 +39,7 @@ public class Dataset {
                 double[][] response = loadResponse(csvFile);
                 Token[] phoneData = loadTimit(new File(makeTimitPath(timitName, "phn")));
                 Token[] wordData = loadTimit(new File(makeTimitPath(timitName, "wrd")));
-                data.add(new LabeledDatum(new Datum(response), phoneData, wordData));
+                data.add(new LabeledDatum(new Datum(response, phoneData), phoneData, wordData));
             } catch (IOException e) {
                 System.err.println("Exception encountered when loading data:");
                 e.printStackTrace();
