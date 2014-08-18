@@ -39,6 +39,9 @@ public class Dataset {
                 double[][] response = loadResponse(csvFile);
                 Token[] phoneData = loadTimit(new File(makeTimitPath(timitName, "phn")));
                 Token[] wordData = loadTimit(new File(makeTimitPath(timitName, "wrd")));
+                if (phoneData.length == 0) {
+                    continue;
+                }
                 data.add(new LabeledDatum(new Datum(response, phoneData), phoneData, wordData));
             } catch (IOException e) {
                 System.err.println("Exception encountered when loading data:");
@@ -49,6 +52,7 @@ public class Dataset {
         data = data.subList(0, Math.min(data.size(), EcogExperiment.nRecordings));
 
         Pair<Integer, Integer> split = makeSplit(data.size());
+        //Pair<Integer, Integer> split = new Pair<Integer,Integer>(1, 2);
 
         List<LabeledDatum> train = data.subList(0, split.getFirst());
         List<LabeledDatum> dev = data.subList(split.getFirst(), split.getSecond());
@@ -99,7 +103,7 @@ public class Dataset {
     }
 
     private static Pair<Integer,Integer> makeSplit(int totalCount) {
-        return new Pair<Integer,Integer>(totalCount / 3, totalCount * 2 / 3);
+        return new Pair<Integer,Integer>(totalCount / 2, totalCount * 3 / 4);
     }
 
 }

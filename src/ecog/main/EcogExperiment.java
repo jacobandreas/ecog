@@ -24,13 +24,15 @@ public class EcogExperiment implements Runnable {
     public static int nRecordings = Integer.MAX_VALUE;
 
     @Option(gloss = "l2 regularization strength")
-    public static double l2Regularizer = 0.1;
+    public static double l2Regularizer = 200;
 
     public void run() {
         Dataset data = Dataset.load();
         Model model = CRFModel.train(data.train, new SimpleNodeFeaturizer(), new SimpleEdgeFeaturizer());
-        EvalStats eval = model.evaluate(data.dev);
-        System.out.println(eval);
+        EvalStats trainEval = model.evaluate(data.train);
+        System.out.println("train: " + trainEval);
+        EvalStats devEval = model.evaluate(data.dev);
+        System.out.println("dev: " + devEval);
     }
 
     public static void main(String[] args) {

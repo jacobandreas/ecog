@@ -64,7 +64,7 @@ public class CRFModel extends Model {
 
             @Override
             public double nodeLogPotential(int d, int t, int s) {
-                return dot(getIndices(nodeFeaturizer.apply(datum, s, t), featureIndex), theta);
+                return dot(getIndices(nodeFeaturizer.apply(datum, s, t, datum.tokenBoundaries[t].beginFrame), featureIndex), theta);
             }
 
             @Override
@@ -117,10 +117,12 @@ public class CRFModel extends Model {
         final DifferentiableFunction objective = makeObjective(data, labelIndex, nodeFeatures, edgeFeatures);
         double[] initWeights = a.zerosDouble(featureIndex.size());
         //EmpiricalGradientTester.test(objective, initWeights, 0.001, 1e-4, 1e-8);
-        Minimizer minimizer = new LBFGSMinimizer(1e-5, 100);
+        //Minimizer minimizer = new LBFGSMinimizer(1e-6, 100);
+        Minimizer minimizer = new OWLQN
         double[] weights = minimizer.minimize(objective, initWeights, true, new Minimizer.Callback() {
             @Override
             public void callback(double[] guess, int iter, double val, double[] grad) {
+                //System.out.println("L = " + val);
             }
         });
         return new CRFModel(weights, labelIndex, nodeFeaturizer, edgeFeaturizer, featureIndex);
@@ -169,7 +171,7 @@ public class CRFModel extends Model {
         for (LabeledDatum datum : data) {
             for (int t = 0; t < datum.labels.length; t++) {
                 int thisState = labelIndex.getIndex(datum.labels[t].label);
-                indexer.index(nf.apply(datum, thisState, datum.labels[t].beginFrame));
+                indexer.index(nf.apply(datum, thisState, t, datum.labels[t].beginFrame));
                 if (t < datum.labels.length - 1) {
                     int nextState = labelIndex.getIndex(datum.labels[t+1].label);
                     indexer.index(ef.apply(datum, thisState, nextState));
@@ -300,6 +302,11 @@ public class CRFModel extends Model {
         for (int d = 0; d < nodeMarginals.numSequences(); d++) {
             for (int s1 = 0; s1 < nodeMarginals.numStates(d); s1++) {
                 for (int s2 = 0; s2 < nodeMarginals.numStates(d); s2++) {
+//                    System.out.println(d + "," + s1 + "," + s2);
+//                    System.out.println(edgeFeatures.length);
+//                    System.out.println(edgeFeatures[0].length);
+//                    System.out.println(edgeFeatures[0][0].length);
+//                    System.out.println(edgeFeatures[0][0][0].length);
                     axpy(edgeMarginals.allowedForwardEdgesExpectedCounts(d, s1)[s2], edgeFeatures[d][s1][s2], expectedWeights);
                 }
             }
@@ -312,10 +319,11 @@ public class CRFModel extends Model {
         for (int d = 0; d < data.size(); d++) {
             LabeledDatum datum = data.get(d);
             features[d] = new int[datum.labels.length][][];
+            assert(datum.labels.length > 0);
             for (int t = 0; t < datum.labels.length; t++) {
                 features[d][t] = new int[numStates][];
                 for (int s = 0; s < numStates; s++) {
-                    features[d][t][s] = getIndices(nf.apply(datum, s, datum.labels[t].beginFrame), featIndex);
+                    features[d][t][s] = getIndices(nf.apply(datum, s, t, datum.labels[t].beginFrame), featIndex);
                 }
             }
         }
