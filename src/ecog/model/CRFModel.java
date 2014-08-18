@@ -117,8 +117,7 @@ public class CRFModel extends Model {
         final DifferentiableFunction objective = makeObjective(data, labelIndex, nodeFeatures, edgeFeatures);
         double[] initWeights = a.zerosDouble(featureIndex.size());
         //EmpiricalGradientTester.test(objective, initWeights, 0.001, 1e-4, 1e-8);
-        //Minimizer minimizer = new LBFGSMinimizer(1e-6, 100);
-        Minimizer minimizer = new OWLQN
+        Minimizer minimizer = new LBFGSMinimizer(1e-6, 100);
         double[] weights = minimizer.minimize(objective, initWeights, true, new Minimizer.Callback() {
             @Override
             public void callback(double[] guess, int iter, double val, double[] grad) {

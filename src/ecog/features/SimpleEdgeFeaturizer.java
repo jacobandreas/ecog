@@ -8,6 +8,7 @@ import ecog.data.Datum;
 public class SimpleEdgeFeaturizer implements EdgeFeaturizer {
     @Override
     public String[] apply(Datum datum, int state1, int state2) {
-        return new String[] { "EDGE__" + state1 + "_" + state2 };
+        //return new String[] { "EDGE__" + state1 + "_" + state2 };
+        return new String[0];
     }
 }
