@@ -18,3 +18,7 @@ hs_err_pid*
 # fig
 /*.map
 /*.help
+/bin/
+/.classpath
+/.project
+/expers/
