@@ -1,10 +1,11 @@
 package ecog.features;
 
+import counter.Counter;
 import ecog.data.Datum;
 
 /**
  * @author jda
  */
 public interface EdgeFeaturizer {
-    public String[] apply(Datum datum, int state1, int state2);
+    public Counter<String> apply(Datum datum, int state1, int state2);
 }

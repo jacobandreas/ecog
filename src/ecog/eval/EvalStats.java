@@ -5,19 +5,21 @@ package ecog.eval;
  */
 public class EvalStats {
 
-    private final double tp, fp, fn;
-    private final double prec, rec, f1;
+    //private final double tp, fp, fn;
+    //private final double prec, rec, f1;
+    private final double per;
 
-    public EvalStats(double tp, double fp, double fn) {
-        this.tp = tp;
-        this.fp = fp;
-        this.fn = fn;
-        prec = tp / (tp + fp);
-        rec = tp / (tp + fn);
-        f1 = 2 * prec * rec / (prec + rec);
+    public EvalStats(double predictions, double correct) {
+//        this.tp = tp;
+//        this.fp = fp;
+//        this.fn = fn;
+//        prec = tp / (tp + fp);
+//        rec = tp / (tp + fn);
+//        f1 = 2 * prec * rec / (prec + rec);
+        per = correct / predictions;
     }
 
     public String toString() {
-        return String.format("P: %f, R: %f, F1: %f", prec, rec, f1);
+        return String.format("Phone error rate: %f", per);
     }
 }

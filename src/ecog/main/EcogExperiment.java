@@ -2,6 +2,7 @@ package ecog.main;
 
 import ecog.data.Dataset;
 import ecog.eval.EvalStats;
+import ecog.features.HackyKernelFeaturizer;
 import ecog.features.SimpleEdgeFeaturizer;
 import ecog.features.SimpleNodeFeaturizer;
 import ecog.model.CRFModel;
@@ -24,10 +25,13 @@ public class EcogExperiment implements Runnable {
     public static int nRecordings = Integer.MAX_VALUE;
 
     @Option(gloss = "l2 regularization strength")
-    public static double l2Regularizer = 200;
+    public static double l2Regularizer = .01;
 
     public void run() {
         Dataset data = Dataset.load();
+        // TODO(jda) duplicate index is wasteful
+        //Model model = CRFModel.train(data.train, new HackyKernelFeaturizer(data.train.subList(0, 100), 5000, CRFModel.makeLabelIndex(data.train)), new SimpleEdgeFeaturizer());
+        System.out.println("Dataset loaded");
         Model model = CRFModel.train(data.train, new SimpleNodeFeaturizer(), new SimpleEdgeFeaturizer());
         EvalStats trainEval = model.evaluate(data.train);
         System.out.println("train: " + trainEval);

@@ -16,6 +16,7 @@ import java.util.List;
 public class Dataset {
 
     public static final int N_ELECTRODES = 256;
+    public static final int N_MEL_FILTERS = 80;
     public static final int AUDIO_SAMPLE_RATE_HZ = 16000;
     public static final int ECOG_SAMPLE_RATE_HZ = 100;
 
@@ -33,16 +34,19 @@ public class Dataset {
 
         List<LabeledDatum> data = new ArrayList<LabeledDatum>();
 
-        for (File csvFile : new File(makeEcogPath()).listFiles()) {
+        for (File csvFile : new File(makeResponsePath()).listFiles()) {
+            //String timitName = csvFile.getName().substring(0, csvFile.getName().length() - 4);
             String timitName = csvFile.getName().substring(0, csvFile.getName().length() - 4);
+            File melFile = new File(makeMelPath() + "/" + timitName + ".csv");
             try {
-                double[][] response = loadResponse(csvFile);
+                double[][] response = loadCSV(csvFile, N_ELECTRODES);
+                double[][] mel = loadCSV(melFile, N_MEL_FILTERS);
                 Token[] phoneData = loadTimit(new File(makeTimitPath(timitName, "phn")));
                 Token[] wordData = loadTimit(new File(makeTimitPath(timitName, "wrd")));
                 if (phoneData.length == 0) {
                     continue;
                 }
-                data.add(new LabeledDatum(new Datum(response, phoneData), phoneData, wordData));
+                data.add(new LabeledDatum(new Datum(response, mel, phoneData), phoneData, wordData));
             } catch (IOException e) {
                 System.err.println("Exception encountered when loading data:");
                 e.printStackTrace();
@@ -62,15 +66,20 @@ public class Dataset {
 
     }
 
-    private static String makeEcogPath() {
+    private static String makeResponsePath() {
         return EcogExperiment.dataRoot + "/" + EcogExperiment.patient + "/csv";
+    }
+
+    private static String makeMelPath() {
+        return EcogExperiment.dataRoot + "/" + EcogExperiment.patient + "/mel";
     }
 
     private static String makeTimitPath(String timitName, String extension) {
         return EcogExperiment.dataRoot + "/sounds/" + timitName + "." + extension;
     }
 
-    private static double[][] loadResponse(File csvFile) throws IOException {
+    // TODO(jda) rename
+    private static double[][] loadCSV(File csvFile, int nItems) throws IOException {
         double[][] response = null;
         BufferedReader reader = new BufferedReader(new FileReader(csvFile));
         String l;
@@ -78,14 +87,14 @@ public class Dataset {
         while ((l = reader.readLine()) != null) {
             String[] parts = l.split(",");
             if (response == null) {
-                response = new double[parts.length][N_ELECTRODES];
+                response = new double[parts.length][nItems];
             }
             for (int frame = 0; frame < parts.length; frame++) {
                 response[frame][electrode] = Double.parseDouble(parts[frame]);
             }
             electrode++;
         }
-        assert electrode == N_ELECTRODES;
+        assert electrode == nItems;
         return response;
     }
 
