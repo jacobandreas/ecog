@@ -6,7 +6,9 @@ import ecog.features.HackyKernelFeaturizer;
 import ecog.features.SimpleEdgeFeaturizer;
 import ecog.features.SimpleNodeFeaturizer;
 import ecog.model.CRFModel;
+import ecog.model.KNNModel;
 import ecog.model.Model;
+import ecog.model.MostCommonModel;
 import fig.Execution;
 import fig.Option;
 
@@ -32,7 +34,10 @@ public class EcogExperiment implements Runnable {
         // TODO(jda) duplicate index is wasteful
         //Model model = CRFModel.train(data.train, new HackyKernelFeaturizer(data.train.subList(0, 100), 5000, CRFModel.makeLabelIndex(data.train)), new SimpleEdgeFeaturizer());
         System.out.println("Dataset loaded");
-        Model model = CRFModel.train(data.train, new SimpleNodeFeaturizer(), new SimpleEdgeFeaturizer());
+//        Model model = CRFModel.train(data.train, new SimpleNodeFeaturizer(), new SimpleEdgeFeaturizer());
+        Model model = KNNModel.train(data.train, new KNNModel.FixedWidthSimilarityMetric(20, 10), 9);
+//        Model model = KNNModel.train(data.train, new KNNModel.FixedWidthSimilarityMetric(10, -5), 9);
+//        Model model = MostCommonModel.train(data.train);
         EvalStats trainEval = model.evaluate(data.train);
         System.out.println("train: " + trainEval);
         EvalStats devEval = model.evaluate(data.dev);

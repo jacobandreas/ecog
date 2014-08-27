@@ -29,13 +29,11 @@ public class Dataset {
         this.dev = dev;
         this.test = test;
     }
-
+    
     public static Dataset load() {
-
         List<LabeledDatum> data = new ArrayList<LabeledDatum>();
 
         for (File csvFile : new File(makeResponsePath()).listFiles()) {
-            //String timitName = csvFile.getName().substring(0, csvFile.getName().length() - 4);
             String timitName = csvFile.getName().substring(0, csvFile.getName().length() - 4);
             File melFile = new File(makeMelPath() + "/" + timitName + ".csv");
             try {
@@ -62,10 +60,34 @@ public class Dataset {
         List<LabeledDatum> dev = data.subList(split.getFirst(), split.getSecond());
         List<LabeledDatum> test = data.subList(split.getSecond(), data.size());
 
+        System.out.println("Train:");
+        printDatasetInfo(train);
+        System.out.println("Dev:");
+        printDatasetInfo(dev);
+        System.out.println("Test:");
+        printDatasetInfo(test);
+        
         return new Dataset(train, dev, test);
-
     }
-
+    
+    private static void printDatasetInfo(List<LabeledDatum> set) {
+    	int numResponseFrames = 0;
+    	int numMelFrames = 0;
+    	int numPhones = 0;
+    	int numWords = 0;
+    	for (LabeledDatum datum : set) {
+    		numResponseFrames += datum.response.length;
+    		numMelFrames += datum.mel.length;
+    		numPhones += datum.phoneLabels.length;
+    		numWords += datum.wordLabels.length;
+    	}
+    	System.out.println("Num sentences: "+set.size());
+    	System.out.println("Avg response frames / sent: "+numResponseFrames/((double) set.size()));
+    	System.out.println("Avg mel frames / sent: "+numMelFrames/((double) set.size()));
+    	System.out.println("Avg phones / sent: "+numPhones/((double) set.size()));
+    	System.out.println("Avg words / sent: "+numWords/((double) set.size()));
+    }
+    
     private static String makeResponsePath() {
         return EcogExperiment.dataRoot + "/" + EcogExperiment.patient + "/csv";
     }
