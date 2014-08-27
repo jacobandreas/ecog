@@ -15,8 +15,8 @@ public class MostCommonModel extends Model {
 		Counter<String> election = new Counter<String>();
 		for (int labDatumIndex=0; labDatumIndex<data.size(); ++labDatumIndex) {
 			LabeledDatum labDatum = data.get(labDatumIndex);
-			for (int labTokenIndex=0; labTokenIndex<labDatum.tokenBoundaries.length; ++labTokenIndex) {
-				String label = labDatum.phoneLabels[labTokenIndex].label;
+			for (int labTokenIndex=0; labTokenIndex<labDatum.labels.length; ++labTokenIndex) {
+				String label = labDatum.labels[labTokenIndex].label;
 				election.incrementCount(label, 1.0);
 			}
 		}

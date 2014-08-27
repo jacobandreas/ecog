@@ -17,11 +17,11 @@ public class KNNModel extends Model {
 		public double similarity(Datum datum1, int tokenIndex1, Datum datum2, int tokenIndex2);
 	}
 	
-	public static class FixedWidthSimilarityMetric implements SimilarityMetric {
+	public static class WindowSimilarityMetric implements SimilarityMetric {
 		int width;
 		int offset;
 		
-		public FixedWidthSimilarityMetric(int width, int offset) {
+		public WindowSimilarityMetric(int width, int offset) {
 			this.width = width;
 			this.offset = offset;
 		}
@@ -30,12 +30,11 @@ public class KNNModel extends Model {
 			float score = 0.0f;
 			float count = 0.0f;
 			
+			// good for resp
 			int beginFrame1 = datum1.tokenBoundaries[tokenIndex1].beginFrame + offset;
 			int beginFrame2 = datum2.tokenBoundaries[tokenIndex2].beginFrame + offset;
 			
-//			int beginFrame1 = datum1.tokenBoundaries[tokenIndex1].endFrame + offset;
-//			int beginFrame2 = datum2.tokenBoundaries[tokenIndex2].endFrame + offset;
-			
+			// good for mel
 //			int beginFrame1 = (datum1.tokenBoundaries[tokenIndex1].beginFrame + datum1.tokenBoundaries[tokenIndex1].endFrame)/2 + offset;
 //			int beginFrame2 = (datum2.tokenBoundaries[tokenIndex2].beginFrame + datum2.tokenBoundaries[tokenIndex2].endFrame)/2 + offset;
 			
@@ -43,17 +42,22 @@ public class KNNModel extends Model {
 				int index1 = beginFrame1+frame;
 				int index2 = beginFrame2+frame;
 				if (index1 >= 0 && index2 >=0 && index1<datum1.response.length && index2<datum2.response.length) {
+					
+					// do resp
 					float[] respFrame1 = a.toFloat(datum1.response[index1]);
 					float[] respFrame2 = a.toFloat(datum2.response[index2]);
 					
+					// do mel
 //					float[] respFrame1 = a.toFloat(datum1.mel[index1]);
 //					float[] respFrame2 = a.toFloat(datum2.mel[index2]);
 					
+					// l2 dist
 //					for (int j=0; j<respFrame1.length; ++j) {
 //						float diff = respFrame1[j] - respFrame2[j];
 //						score -= diff * diff;
 //					}
 					
+					// cos dist
 					float mag1 = 0.0f;
 					for (int j=0; j<respFrame1.length; ++j) {
 						mag1 += respFrame1[j] * respFrame1[j];
@@ -118,7 +122,7 @@ public class KNNModel extends Model {
 		Counter<String> election = new Counter<String>();
 		while (!queue.isEmpty()) {
 			Pair<Integer,Integer> voter = queue.next();
-			String label = data.get(voter.getFirst()).phoneLabels[voter.getSecond()].label;
+			String label = data.get(voter.getFirst()).labels[voter.getSecond()].label;
 			election.incrementCount(label, 1.0);
 		}
 		return new Token(election.argMax(), datum.tokenBoundaries[tokenIndex].beginFrame, datum.tokenBoundaries[tokenIndex].endFrame);
