@@ -34,8 +34,8 @@ public class EcogExperiment implements Runnable {
         // TODO(jda) duplicate index is wasteful
         //Model model = CRFModel.train(data.train, new HackyKernelFeaturizer(data.train.subList(0, 100), 5000, CRFModel.makeLabelIndex(data.train)), new SimpleEdgeFeaturizer());
         System.out.println("Dataset loaded");
-//        Model model = CRFModel.train(data.train, new SimpleNodeFeaturizer(), new SimpleEdgeFeaturizer());
-        Model model = KNNModel.train(data.train, new KNNModel.FixedWidthSimilarityMetric(20, 10), 9);
+        Model model = CRFModel.train(data.train, new SimpleNodeFeaturizer(), new SimpleEdgeFeaturizer());
+//        Model model = KNNModel.train(data.train, new KNNModel.FixedWidthSimilarityMetric(20, 10), 9);
 //        Model model = KNNModel.train(data.train, new KNNModel.FixedWidthSimilarityMetric(10, -5), 9);
 //        Model model = MostCommonModel.train(data.train);
         EvalStats trainEval = model.evaluate(data.train);
