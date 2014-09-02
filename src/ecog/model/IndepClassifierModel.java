@@ -19,6 +19,8 @@ import ecog.data.Token;
 
 public class IndepClassifierModel extends Model {
 	
+	public static final boolean USE_MEL = false;
+	
 	public static interface FeatureExtractor {
 		public CounterInterface<Integer> extract(Datum datum, int tokenIndex);
 	}
@@ -27,12 +29,99 @@ public class IndepClassifierModel extends Model {
 		public CounterInterface<String> extract(Datum datum, int tokenIndex);
 	}
 	
+	public static class ProductFeatureExtractor implements StringFeatureExtractor {
+
+		StringFeatureExtractor featureExtractor1;
+		StringFeatureExtractor featureExtractor2;
+		
+		public ProductFeatureExtractor(StringFeatureExtractor featureExtractor1, StringFeatureExtractor featureExtractor2) {
+			this.featureExtractor1 = featureExtractor1;
+			this.featureExtractor2 = featureExtractor2;
+		}
+		
+		public CounterInterface<String> extract(Datum datum, int tokenIndex) {
+			CounterInterface<String> features1 = featureExtractor1.extract(datum, tokenIndex);
+			CounterInterface<String> features2 = featureExtractor2.extract(datum, tokenIndex);
+			CounterInterface<String> features = new Counter<String>();
+			for (Map.Entry<String,Double> entry1 : features1.entries()) {
+				String name1 = entry1.getKey();
+				double val1 = entry1.getValue();
+				for (Map.Entry<String,Double> entry2 : features2.entries()) {
+					String name2 = entry2.getKey();
+					double val2 = entry2.getValue();
+					features.setCount(name1+"_prod_"+name2, val1 * val2);
+				}
+			}
+			return features;
+		}
+		
+	}
+	
+	public static class BinarizingFeatureExtractor implements StringFeatureExtractor {
+		
+		double stdThresh;
+		StringFeatureExtractor featureExtractor;
+		CounterInterface<String> thresholds;
+		
+		public BinarizingFeatureExtractor(StringFeatureExtractor featureExtractor, double stdThresh, List<LabeledDatum> train) {
+			this.stdThresh = stdThresh;
+			this.featureExtractor = featureExtractor;
+			
+			CounterInterface<String> means = new Counter<String>();
+			double count = 0.0;
+			for (LabeledDatum labDatum : train) {
+				for (int tokenIndex=0; tokenIndex<labDatum.labels.length; ++tokenIndex) {
+					CounterInterface<String> feats = featureExtractor.extract(labDatum, tokenIndex);
+					means.incrementAll(feats);
+					count++;
+				}
+			}
+			means.scale(1.0 / count);
+			
+			CounterInterface<String>vars = new Counter<String>();
+			for (LabeledDatum labDatum : train) {
+				for (int tokenIndex=0; tokenIndex<labDatum.labels.length; ++tokenIndex) {
+					CounterInterface<String> feats = featureExtractor.extract(labDatum, tokenIndex);
+					for (Map.Entry<String,Double> entry : feats.entries()) {
+						String name = entry.getKey();
+						double val = entry.getValue();
+						double mean = means.getCount(name);
+						vars.incrementCount(name, (val - mean)*(val - mean));
+					}
+				}
+			}
+			vars.scale(1.0 / count);
+			
+			thresholds = new Counter<String>();
+			for (Map.Entry<String,Double> entry : means.entries()) {
+				String name = entry.getKey();
+				double mean = entry.getValue();
+				double var = vars.getCount(name);
+				thresholds.setCount(name, mean + stdThresh * Math.sqrt(var));
+			}
+		}
+		
+		public CounterInterface<String> extract(Datum datum, int tokenIndex) {
+			CounterInterface<String> unbinFeatures = featureExtractor.extract(datum, tokenIndex);
+			CounterInterface<String> features = new Counter<String>();
+			for (Map.Entry<String,Double> entry : unbinFeatures.entries()) {
+				String name = entry.getKey();
+				double val = entry.getValue();
+				double thresh = thresholds.getCount(name);
+				if (val >= thresh) {
+					features.setCount(name+"_bin"+stdThresh, 1.0);
+				}
+			}
+			return features;
+		}
+	}
+	
 	public static class SegmentStatsFeatureExtractor implements StringFeatureExtractor {
 		public CounterInterface<String> extract(Datum datum, int tokenIndex) {
 			CounterInterface<String> features = new Counter<String>();
 			
 			double[][] signal = datum.response;
-//			double[][] signal = datum.mel;
+			if (USE_MEL) signal = datum.mel;
 			
 			int beginFrame = datum.tokenBoundaries[tokenIndex].beginFrame;
 			int endFrame = datum.tokenBoundaries[tokenIndex].endFrame;
@@ -47,14 +136,14 @@ public class IndepClassifierModel extends Model {
 				}
 				double var = 0.0;
 				for (int f=beginFrame; f<endFrame; ++f) {
-					double meanDiff = mean - datum.response[f][d];
+					double meanDiff = mean - signal[f][d];
 					var += meanDiff * meanDiff / numFrames;
 				}
 				double min = Double.POSITIVE_INFINITY;
 				double max = Double.NEGATIVE_INFINITY;
 				for (int f=beginFrame; f<endFrame; ++f) {
-					min = Math.min(min, datum.response[f][d]);
-					max = Math.max(max, datum.response[f][d]);
+					min = Math.min(min, signal[f][d]);
+					max = Math.max(max, signal[f][d]);
 				}
 				
 				features.setCount(d+"_mean_segstats", mean);
@@ -79,7 +168,7 @@ public class IndepClassifierModel extends Model {
 			CounterInterface<String> features = new Counter<String>();
 			
 			double[][] signal = datum.response;
-//			double[][] signal = datum.mel;
+			if (USE_MEL) signal = datum.mel;
 			
 			int beginFrame = datum.tokenBoundaries[tokenIndex].beginFrame + offset;
 //			int beginFrame = (datum.tokenBoundaries[tokenIndex].beginFrame+datum.tokenBoundaries[tokenIndex].endFrame)/2 + offset;
@@ -133,7 +222,7 @@ public class IndepClassifierModel extends Model {
 			CounterInterface<String> features = new Counter<String>();
 			
 			double[][] signal = datum.response;
-//			double[][] signal = datum.mel;
+			if (USE_MEL) signal = datum.mel;
 			
 			int beginFrame = datum.tokenBoundaries[tokenIndex].beginFrame + offset;
 //			int beginFrame = (datum.tokenBoundaries[tokenIndex].beginFrame+datum.tokenBoundaries[tokenIndex].endFrame)/2 + offset;

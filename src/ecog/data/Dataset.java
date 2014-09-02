@@ -5,10 +5,18 @@ import tuple.Pair;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import arrays.a;
 
 /**
  * @author jda
@@ -40,6 +48,7 @@ public class Dataset {
                 double[][] response = loadCSV(csvFile, N_ELECTRODES);
                 double[][] mel = loadCSV(melFile, N_MEL_FILTERS);
                 Token[] phoneData = loadTimit(new File(makeTimitPath(timitName, "phn")));
+//                phoneData = mapToArpabet(phoneData);
                 Token[] wordData = loadTimit(new File(makeTimitPath(timitName, "wrd")));
                 if (phoneData.length == 0) {
                     continue;
@@ -119,7 +128,7 @@ public class Dataset {
         assert electrode == nItems;
         return response;
     }
-
+    
     private static Token[] loadTimit(File timitFile) throws IOException {
         ArrayList<Token> tokens = new ArrayList<Token>();
         BufferedReader reader = new BufferedReader(new FileReader(timitFile));
@@ -135,6 +144,26 @@ public class Dataset {
 
     private static Pair<Integer,Integer> makeSplit(int totalCount) {
         return new Pair<Integer,Integer>(totalCount / 2, totalCount * 3 / 4);
+    }
+    
+    private static Token[] mapToArpabet(Token[] tokens) {
+    	Map<String,String> arphabetMap = new HashMap<String,String>();
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(EcogExperiment.phoneMapPath));
+	    	String l;
+	    	while ((l = reader.readLine()) != null) {
+	    		String[] parts = l.split(" ");
+	    		for (int i=1; i<parts.length; ++i) {
+	    			arphabetMap.put(parts[i], parts[0]);
+	    		}
+	    	}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	for (int i=0; i<tokens.length; ++i) {
+    		tokens[i] = new Token(tokens[i].label, tokens[i].beginFrame, tokens[i].endFrame);
+    	}
+    	return tokens;
     }
 
 }
