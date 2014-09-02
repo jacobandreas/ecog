@@ -14,4 +14,8 @@ public class Token {
         this.beginFrame = beginFrame;
         this.endFrame = endFrame;
     }
+
+    public String toString() {
+        return "Token(" + this.label + ")";
+    }
 }

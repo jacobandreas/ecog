@@ -4,9 +4,7 @@ import classifier.LibLinearWrapper;
 import de.bwaldvogel.liblinear.SolverType;
 import ecog.data.Dataset;
 import ecog.eval.EvalStats;
-import ecog.features.HackyKernelFeaturizer;
-import ecog.features.SimpleEdgeFeaturizer;
-import ecog.features.SimpleNodeFeaturizer;
+import ecog.features.*;
 import ecog.model.CRFModel;
 import ecog.model.IndepClassifierModel;
 import ecog.model.KNNModel;
@@ -30,29 +28,24 @@ public class EcogExperiment implements Runnable {
     public static int nRecordings = Integer.MAX_VALUE;
 
     @Option(gloss = "l2 regularization strength")
-    public static double l2Regularizer = .01;
+    public static double l2Regularizer = 10;
+    // .202
+    // .158
+
+    @Option(gloss = "phone transition model training path")
+    public static String phonePath;
+
+    @Option(gloss = "CMU/TIMIT phone symbol correspondences")
+    public static String phoneMapPath;
 
     public void run() {
         Dataset data = Dataset.load();
         // TODO(jda) duplicate index is wasteful
-        //Model model = CRFModel.train(data.train, new HackyKernelFeaturizer(data.train.subList(0, 100), 5000, CRFModel.makeLabelIndex(data.train)), new SimpleEdgeFeaturizer());
         System.out.println("Dataset loaded");
-        
-//        Model model = CRFModel.train(data.train, new SimpleNodeFeaturizer(), new SimpleEdgeFeaturizer());
-        
-//        Model model = KNNModel.train(data.train, new KNNModel.FixedWidthSimilarityMetric(20, 10), 9); // good for resp
-//        Model model = KNNModel.train(data.train, new KNNModel.FixedWidthSimilarityMetric(10, -5), 9); // good for mel
-//        Model model = MostCommonModel.train(data.train);
-        
-        Model model = IndepClassifierModel.train(data.train, new LibLinearWrapper(SolverType.MCSVM_CS, 1e-4, 1e-6), 
-        		new IndepClassifierModel.IndexingFeatureExtractor(
-        			new IndepClassifierModel.SegmentStatsFeatureExtractor(),
-        			new IndepClassifierModel.WindowStatsFeatureExtractor(5, 10),
-        			new IndepClassifierModel.WindowStatsFeatureExtractor(5, 15),
-        			new IndepClassifierModel.WindowStatsFeatureExtractor(5, 20),
-        			new IndepClassifierModel.WindowStatsFeatureExtractor(5, 25),
-        			new IndepClassifierModel.WindowStatsFeatureExtractor(20, 10)));
-        
+        NodeFeaturizer nf = new SimpleNodeFeaturizer();
+        EdgeFeaturizer ef = new CMUEdgeFeaturizer(phonePath, phoneMapPath, CRFModel.makeLabelIndex(data.train));
+        Model model = CRFModel.train(data.train, nf, ef);
+
         EvalStats trainEval = model.evaluate(data.train);
         System.out.println("train: " + trainEval);
         EvalStats devEval = model.evaluate(data.dev);

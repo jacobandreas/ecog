@@ -29,7 +29,7 @@ public class Dataset {
         this.dev = dev;
         this.test = test;
     }
-    
+
     public static Dataset load() {
         List<LabeledDatum> data = new ArrayList<LabeledDatum>();
 
@@ -66,10 +66,10 @@ public class Dataset {
         printDatasetInfo(dev);
         System.out.println("Test:");
         printDatasetInfo(test);
-        
+
         return new Dataset(train, dev, test);
     }
-    
+
     private static void printDatasetInfo(List<LabeledDatum> set) {
     	int numResponseFrames = 0;
     	int numMelFrames = 0;
@@ -87,7 +87,7 @@ public class Dataset {
     	System.out.println("Avg phones / sent: "+numPhones/((double) set.size()));
     	System.out.println("Avg words / sent: "+numWords/((double) set.size()));
     }
-    
+
     private static String makeResponsePath() {
         return EcogExperiment.dataRoot + "/" + EcogExperiment.patient + "/csv";
     }
