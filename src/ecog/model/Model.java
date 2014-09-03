@@ -7,6 +7,8 @@ import ecog.eval.EvalStats;
 import java.util.List;
 import java.util.Set;
 
+import tuple.Pair;
+
 /**
  * @author jda
  */
@@ -25,19 +27,25 @@ public abstract class Model {
         }
         return new EvalStats(total, correct);
     }
-    public EvalStats evaluateLabelSubset(List<LabeledDatum> data, Set<String> labelSubset) {
-    	int total = 0, correct = 0;
+    public Pair<EvalStats,EvalStats> evaluateLabelSubset(List<LabeledDatum> data, Set<String> labelSubset) {
+    	int totalRecall = 0, correctRecall = 0, totalPrec = 0, correctPrec = 0;
     	for (LabeledDatum datum : data) {
     		LabeledDatum predDatum = predict(datum);
     		for (int i = 0; i < datum.labels.length; i++) {
     			if (labelSubset.contains(datum.labels[i].label)) {
     				if (datum.labels[i].label.equals(predDatum.labels[i].label)) {
-    					correct += 1;
+    					correctRecall += 1;
     				}
-    				total += 1;
+    				totalRecall += 1;
+    			}
+    			if (labelSubset.contains(predDatum.labels[i].label)) {
+    				if (datum.labels[i].label.equals(predDatum.labels[i].label)) {
+    					correctPrec += 1;
+    				}
+    				totalPrec += 1;
     			}
     		}
     	}
-    	return new EvalStats(total, correct);
+    	return Pair.makePair(new EvalStats(totalPrec, correctPrec), new EvalStats(totalRecall, correctRecall));
     }
 }
