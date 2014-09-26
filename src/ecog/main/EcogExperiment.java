@@ -2,6 +2,7 @@ package ecog.main;
 
 
 import classifier.LibLinearWrapper;
+import classifier.LogisticRegressionClassifier;
 import de.bwaldvogel.liblinear.SolverType;
 import ecog.data.Dataset;
 import ecog.eval.EvalStats;
@@ -79,7 +80,8 @@ public class EcogExperiment implements Runnable {
 //      			new IndepClassifierModel.BinarizingFeatureExtractor(new IndepClassifierModel.WindowStatsFeatureExtractor(20, -5), 0.0, data.train),
 //      			new IndepClassifierModel.BinarizingFeatureExtractor(new IndepClassifierModel.WindowStatsFeatureExtractor(20, -5), 0.5, data.train)));
       
-      Model model = IndepClassifierModel.train(data.train, new LibLinearWrapper(SolverType.MCSVM_CS, 1e0, 1e-5), 
+//      Model model = IndepClassifierModel.train(data.train, new LibLinearWrapper(SolverType.MCSVM_CS, 1e0, 1e-5), 
+        Model model = IndepClassifierModel.train(data.train, new LogisticRegressionClassifier(1e0, 1e-7, 100, 8), 
     		  new IndepClassifierModel.IndexingFeatureExtractor(
     				  new IndepClassifierModel.SegmentStatsFeatureExtractor(),
     				  new IndepClassifierModel.BinarizingFeatureExtractor(new IndepClassifierModel.SegmentStatsFeatureExtractor(), -0.5, data.train),

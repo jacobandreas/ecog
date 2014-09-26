@@ -129,27 +129,29 @@ public class IndepClassifierModel extends Model {
 			double numFrames = endFrame - beginFrame;
 			int numDim = signal[0].length;
 			
-			for (int d=0; d<numDim; ++d) {
-				double mean = 0.0;
-				for (int f=beginFrame; f<endFrame; ++f) {
-					mean += signal[f][d] / numFrames;
+			if (beginFrame >= 0 && endFrame<=signal.length) {
+				for (int d=0; d<numDim; ++d) {
+					double mean = 0.0;
+					for (int f=beginFrame; f<endFrame; ++f) {
+						mean += signal[f][d] / numFrames;
+					}
+					double var = 0.0;
+					for (int f=beginFrame; f<endFrame; ++f) {
+						double meanDiff = mean - signal[f][d];
+						var += meanDiff * meanDiff / numFrames;
+					}
+					double min = Double.POSITIVE_INFINITY;
+					double max = Double.NEGATIVE_INFINITY;
+					for (int f=beginFrame; f<endFrame; ++f) {
+						min = Math.min(min, signal[f][d]);
+						max = Math.max(max, signal[f][d]);
+					}
+
+					features.setCount(d+"_mean_segstats", mean);
+					features.setCount(d+"_var_segstats", var);
+					features.setCount(d+"_min_segstats", min);
+					features.setCount(d+"_max_segstats", max);
 				}
-				double var = 0.0;
-				for (int f=beginFrame; f<endFrame; ++f) {
-					double meanDiff = mean - signal[f][d];
-					var += meanDiff * meanDiff / numFrames;
-				}
-				double min = Double.POSITIVE_INFINITY;
-				double max = Double.NEGATIVE_INFINITY;
-				for (int f=beginFrame; f<endFrame; ++f) {
-					min = Math.min(min, signal[f][d]);
-					max = Math.max(max, signal[f][d]);
-				}
-				
-				features.setCount(d+"_mean_segstats", mean);
-				features.setCount(d+"_var_segstats", var);
-				features.setCount(d+"_min_segstats", min);
-				features.setCount(d+"_max_segstats", max);
 			}
 			return features;
 		}
@@ -177,33 +179,35 @@ public class IndepClassifierModel extends Model {
 			double numFrames = endFrame - beginFrame;
 			int numDim = signal[0].length;
 			
-			for (int d=0; d<numDim; ++d) {
-				double mean = 0.0;
-				for (int f=beginFrame; f<endFrame; ++f) {
-					if (f >=0 && f<signal.length) {
-						mean += signal[f][d] / numFrames;
+			if (beginFrame >= 0 && endFrame<=signal.length) {
+				for (int d=0; d<numDim; ++d) {
+					double mean = 0.0;
+					for (int f=beginFrame; f<endFrame; ++f) {
+						if (f >=0 && f<signal.length) {
+							mean += signal[f][d] / numFrames;
+						}
 					}
-				}
-				double var = 0.0;
-				for (int f=beginFrame; f<endFrame; ++f) {
-					if (f >=0 && f<signal.length) {
-						double meanDiff = mean - signal[f][d];
-						var += meanDiff * meanDiff / numFrames;
+					double var = 0.0;
+					for (int f=beginFrame; f<endFrame; ++f) {
+						if (f >=0 && f<signal.length) {
+							double meanDiff = mean - signal[f][d];
+							var += meanDiff * meanDiff / numFrames;
+						}
 					}
-				}
-				double min = Double.POSITIVE_INFINITY;
-				double max = Double.NEGATIVE_INFINITY;
-				for (int f=beginFrame; f<endFrame; ++f) {
-					if (f >=0 && f<signal.length) {
-						min = Math.min(min, signal[f][d]);
-						max = Math.max(max, signal[f][d]);
+					double min = Double.POSITIVE_INFINITY;
+					double max = Double.NEGATIVE_INFINITY;
+					for (int f=beginFrame; f<endFrame; ++f) {
+						if (f >=0 && f<signal.length) {
+							min = Math.min(min, signal[f][d]);
+							max = Math.max(max, signal[f][d]);
+						}
 					}
+
+					features.setCount(d+"_mean_width"+width+"_offset"+offset+"_winstats", mean);
+					features.setCount(d+"_var_width"+width+"_offset"+offset+"_winstats", var);
+					features.setCount(d+"_min_width"+width+"_offset"+offset+"_winstats", min);
+					features.setCount(d+"_max_width"+width+"_offset"+offset+"_winstats", max);
 				}
-				
-				features.setCount(d+"_mean_width"+width+"_offset"+offset+"_winstats", mean);
-				features.setCount(d+"_var_width"+width+"_offset"+offset+"_winstats", var);
-				features.setCount(d+"_min_width"+width+"_offset"+offset+"_winstats", min);
-				features.setCount(d+"_max_width"+width+"_offset"+offset+"_winstats", max);
 			}
 			return features;
 		}
@@ -230,10 +234,12 @@ public class IndepClassifierModel extends Model {
 			
 			int numDim = signal[0].length;
 			
-			for (int f=beginFrame; f<endFrame; ++f) {
-				if (f >=0 && f<signal.length) {
-					for (int d=0; d<numDim; ++d) {
-						features.setCount(d+"_"+(f-beginFrame)+"_width"+width+"_offset"+offset+"_winident", signal[f][d]);
+			if (beginFrame >= 0 && endFrame<=signal.length) {
+				for (int f=beginFrame; f<endFrame; ++f) {
+					if (f >=0 && f<signal.length) {
+						for (int d=0; d<numDim; ++d) {
+							features.setCount(d+"_"+(f-beginFrame)+"_width"+width+"_offset"+offset+"_winident", signal[f][d]);
+						}
 					}
 				}
 			}
