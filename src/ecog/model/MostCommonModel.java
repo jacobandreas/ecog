@@ -32,7 +32,7 @@ public class MostCommonModel extends Model {
 		for (int tokenIndex=0; tokenIndex<predictedPhones.length; ++tokenIndex) {
 			predictedPhones[tokenIndex] = new Token(mostCommonLabel, datum.tokenBoundaries[tokenIndex].beginFrame, datum.tokenBoundaries[tokenIndex].endFrame);
 		}
-		return new LabeledDatum(datum, predictedPhones, null);
+		return new LabeledDatum(datum, predictedPhones, null, null);
 	}
 	
 }

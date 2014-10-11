@@ -107,7 +107,7 @@ public class CRFModel extends Model {
             Token predToken = new Token(labelIndex.getObject(predLabel), boundaryToken.beginFrame, boundaryToken.endFrame);
             predicted[t] = predToken;
         }
-        return new LabeledDatum(datum, predicted, null);
+        return new LabeledDatum(datum, predicted, null, null);
     }
 
     public static CRFModel train(List<LabeledDatum> data, NodeFeaturizer nodeFeaturizer, EdgeFeaturizer edgeFeaturizer) {

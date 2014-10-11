@@ -104,7 +104,7 @@ public class KNNModel extends Model {
 		BetterThreader<Integer,Object> threader = new BetterThreader<Integer,Object>(func, 8);
 		for (int tokenIndex=0; tokenIndex<predictedPhones.length; ++tokenIndex) threader.addFunctionArgument(tokenIndex);
 		threader.run();
-		return new LabeledDatum(datum, predictedPhones, null);
+		return new LabeledDatum(datum, predictedPhones, null, null);
 	}
 	
 	private Token predict(Datum datum, int tokenIndex) {

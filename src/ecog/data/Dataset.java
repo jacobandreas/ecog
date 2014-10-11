@@ -1,6 +1,7 @@
 package ecog.data;
 
 import ecog.main.EcogExperiment;
+import fileio.f;
 import tuple.Pair;
 
 import java.io.BufferedReader;
@@ -46,10 +47,11 @@ public class Dataset {
                 Token[] phoneData = loadTimit(new File(makeTimitPath(timitName, "phn")));
 //                phoneData = mapToArpabet(phoneData);
                 Token[] wordData = loadTimit(new File(makeTimitPath(timitName, "wrd")));
+                double[][] mcep = f.readDoubleMatrix(makeTimitPath(timitName+"_vc", "mcep24"));
                 if (phoneData.length == 0) {
                     continue;
                 }
-                data.add(new LabeledDatum(new Datum(response, mel, phoneData), phoneData, wordData));
+                data.add(new LabeledDatum(new Datum(response, mel, phoneData), phoneData, wordData, mcep));
             } catch (IOException e) {
                 System.err.println("Exception encountered when loading data:");
                 e.printStackTrace();

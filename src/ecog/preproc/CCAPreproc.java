@@ -91,7 +91,7 @@ public class CCAPreproc {
                 Datum baseDatum = new Datum(a.toDouble(projectedResponse.toArray2()),
                         a.toDouble(projectedMel.toArray2()),
                         datum.tokenBoundaries);
-                LabeledDatum outDatum = new LabeledDatum(baseDatum, datum.phoneLabels, datum.wordLabels);
+                LabeledDatum outDatum = new LabeledDatum(baseDatum, datum.phoneLabels, datum.wordLabels, null);
                 outs[d].add(outDatum);
             }
         }
