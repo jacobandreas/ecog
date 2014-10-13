@@ -26,13 +26,26 @@ public class EcogExperiment implements Runnable {
     @Option(gloss = "path to patient (e.g. 'left_grid/EC36')")
     public static String patient = "left_grid/EC36";
 
-    @Option(gloss = "number of recordings to run on")
-    public static int nRecordings = Integer.MAX_VALUE;
+    @Option(gloss = "")
+    public static int startTrain = 0;
+    
+    @Option(gloss = "")
+    public static int numTrain = 100;
+    
+    @Option(gloss = "")
+    public static int startDev = 0;
+    
+    @Option(gloss = "")
+    public static int numDev = 100;
+    
+    @Option(gloss = "")
+    public static int startTest = 0;
+    
+    @Option(gloss = "")
+    public static int numTest = 100;
 
     @Option(gloss = "l2 regularization strength")
     public static double l2Regularizer = 10;
-    // .202
-    // .158
 
     @Option(gloss = "phone transition model training path")
     public static String phonePath;
@@ -41,7 +54,7 @@ public class EcogExperiment implements Runnable {
     public static String phoneMapPath;
 
     public void run() {
-        Dataset data = Dataset.load();
+        Dataset data = Dataset.load(startTrain, numTrain, startDev, numDev, startTest, numTest);
         System.out.println("Dataset loaded");
         
 //        NodeFeaturizer nf = new SimpleNodeFeaturizer();
